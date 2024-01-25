@@ -6,32 +6,33 @@ pub struct Set2 {
 
 impl Set2 {
     pub fn bet_1(&mut self, player: &mut impl Player, amount: u64) -> Result<(), BetError> {
-        self.bet_side(player, amount, 1)
+        self.bet_side(player, amount, Set2Side::Side1)
     }
     pub fn bet_2(&mut self, player: &mut impl Player, amount: u64) -> Result<(), BetError> {
-        self.bet_side(player, amount, 2)
+        self.bet_side(player, amount, Set2Side::Side2)
     }
 
     fn bet_side(
         &mut self,
         player: &mut impl Player,
         amount: u64,
-        side: u8,
+        side: Set2Side,
     ) -> Result<(), BetError> {
-        let side = if side == 1 {
-            &mut self.side_1
-        } else {
-            &mut self.side_2
+        // Pick side dependent on side argument.
+        let side = match side {
+            Set2Side::Side1 => &mut self.side_1,
+            Set2Side::Side2 => &mut self.side_2,
         };
 
+        // Return if insufficient balance.
         if player.balance() < amount {
             return Err(BetError::InsufficientBalance);
         }
 
-        // Reduce balance
+        // Reduce balance.
         *player.balance_mut() = player.balance().saturating_sub(amount);
 
-        // Add bet
+        // Add bet.
         side.push(Bet {
             player_name: player.name().clone(),
             amount,
@@ -47,6 +48,12 @@ impl Default for Set2 {
             side_2: Vec::new(),
         }
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+enum Set2Side {
+    Side1,
+    Side2,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -110,7 +117,7 @@ mod test {
     }
 
     #[test]
-    fn set2_bet() {
+    fn set2_sufficient_balance() {
         let mut set2 = Set2::default();
         let mut player = BasicPlayer {
             name: "Sunrosa".into(),
