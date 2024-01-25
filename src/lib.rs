@@ -2,15 +2,17 @@ use std::collections::HashMap;
 
 use thiserror::Error;
 
+type Currency = u64;
+
 /// Betting set with two outcomes. A player can bet on both sides at once.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Set2 {
     /// * `0` - Player name.
     /// * `1` - Bet amount.
-    side_1: HashMap<String, u64>,
+    side_1: HashMap<String, Currency>,
     /// * `0` - Player name.
     /// * `1` - Bet amount.
-    side_2: HashMap<String, u64>,
+    side_2: HashMap<String, Currency>,
 }
 
 impl Set2 {
@@ -19,7 +21,7 @@ impl Set2 {
     /// # Errors
     /// * [`InsufficientBalance`](BetError::InsufficientBalance) - Insufficient balance to bet.
     /// * [`PlayerExists`](BetError::PlayerExists) - Player cannot initiate a new bet, as they've already bet.
-    pub fn bet_1(&mut self, player: &mut impl Player, amount: u64) -> Result<(), BetError> {
+    pub fn bet_1(&mut self, player: &mut impl Player, amount: Currency) -> Result<(), BetError> {
         self.bet_side(player, amount, Set2Side::Side1)
     }
     /// Bet as `player` on side 2 with `amount`. Reduces the player's balance by amount if they have enough.
@@ -27,14 +29,14 @@ impl Set2 {
     /// # Errors
     /// * [`InsufficientBalance`](BetError::InsufficientBalance) - Insufficient balance to bet.
     /// * [`PlayerExists`](BetError::PlayerExists) - Player cannot initiate a new bet, as they've already bet.
-    pub fn bet_2(&mut self, player: &mut impl Player, amount: u64) -> Result<(), BetError> {
+    pub fn bet_2(&mut self, player: &mut impl Player, amount: Currency) -> Result<(), BetError> {
         self.bet_side(player, amount, Set2Side::Side2)
     }
 
     fn bet_side(
         &mut self,
         player: &mut impl Player,
-        amount: u64,
+        amount: Currency,
         side: Set2Side,
     ) -> Result<(), BetError> {
         // Pick side dependent on side argument. If this runs into a borrow checker issue for holding a mutable reference for longer than temporary lifetime, it may be possible to extract into a local function to be evaluated each time a mutable reference to side is needed.
@@ -66,7 +68,7 @@ impl Set2 {
     /// # Errors
     /// * [`InsufficientBalance`](BetError::InsufficientBalance) - Insufficient balance to bet.
     /// * [`PlayerNotExists`](BetError::PlayerNotExists) - Player cannot raise their bet, as they've yet to bet at all.
-    pub fn raise_1(&mut self, player: &mut impl Player, amount: u64) -> Result<(), BetError> {
+    pub fn raise_1(&mut self, player: &mut impl Player, amount: Currency) -> Result<(), BetError> {
         self.raise_side(player, amount, Set2Side::Side1)
     }
     /// Raise an already-existing bet on side 2 as `player` for `amount`. Reduces the player's balance by amount if they have enough.
@@ -74,14 +76,14 @@ impl Set2 {
     /// # Errors
     /// * [`InsufficientBalance`](BetError::InsufficientBalance) - Insufficient balance to bet.
     /// * [`PlayerNotExists`](BetError::PlayerNotExists) - Player cannot raise their bet, as they've yet to bet at all.
-    pub fn raise_2(&mut self, player: &mut impl Player, amount: u64) -> Result<(), BetError> {
+    pub fn raise_2(&mut self, player: &mut impl Player, amount: Currency) -> Result<(), BetError> {
         self.raise_side(player, amount, Set2Side::Side2)
     }
 
     fn raise_side(
         &mut self,
         player: &mut impl Player,
-        amount: u64,
+        amount: Currency,
         side: Set2Side,
     ) -> Result<(), BetError> {
         // Pick side dependent on side argument. If this runs into a borrow checker issue for holding a mutable reference for longer than temporary lifetime, it may be possible to extract into a local function to be evaluated each time a mutable reference to side is needed.
@@ -113,7 +115,7 @@ impl Set2 {
     /// # Returns
     /// * `K` - Immutable reference to player name.
     /// * `V` - Amount.
-    pub fn payout<'a>(&'a self, winner: Set2Side) -> HashMap<&'a String, u64> {
+    pub fn payout<'a>(&'a self, winner: Set2Side) -> HashMap<&'a String, Currency> {
         let mut payout = HashMap::new();
 
         let (winning_side, losing_side) = match winner {
@@ -136,20 +138,20 @@ impl Set2 {
 
             payout.insert(
                 winning_player.0,
-                winning_player.1 + (losing_side_total as f64 * winning_ratio).round() as u64,
+                winning_player.1 + (losing_side_total as f64 * winning_ratio).round() as Currency,
             );
 
             for player in losing_side {
                 payout.insert(
                     player.0,
-                    (*player.1 as f64 * (1.0 - winning_ratio)).round() as u64,
+                    (*player.1 as f64 * (1.0 - winning_ratio)).round() as Currency,
                 );
             }
         } else {
             for player in winning_side {
                 payout.insert(
                     player.0,
-                    player.1 + (*player.1 as f64 * losing_ratio).round() as u64,
+                    player.1 + (*player.1 as f64 * losing_ratio).round() as Currency,
                 );
             }
         }
@@ -193,9 +195,9 @@ pub trait Player {
     /// The player's name.
     fn name(&self) -> &String;
     /// The player's account balance.
-    fn balance(&self) -> u64;
+    fn balance(&self) -> Currency;
     /// Mutable reference to the player's account balance.
-    fn balance_mut(&mut self) -> &mut u64;
+    fn balance_mut(&mut self) -> &mut Currency;
 }
 
 #[cfg(test)]
@@ -205,7 +207,7 @@ mod test {
     #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
     struct BasicPlayer {
         name: String,
-        balance: u64,
+        balance: Currency,
     }
 
     impl Player for BasicPlayer {
@@ -213,11 +215,11 @@ mod test {
             &self.name
         }
 
-        fn balance(&self) -> u64 {
+        fn balance(&self) -> Currency {
             self.balance
         }
 
-        fn balance_mut(&mut self) -> &mut u64 {
+        fn balance_mut(&mut self) -> &mut Currency {
             &mut self.balance
         }
     }
@@ -282,7 +284,7 @@ mod test {
         assert_eq!(yawn.balance(), 50);
 
         let payout = set2.payout(Set2Side::Side1);
-        let mut payout_assert: HashMap<String, u64> = HashMap::new();
+        let mut payout_assert: HashMap<String, Currency> = HashMap::new();
         payout_assert.insert("Sunrosa".into(), 100);
         payout_assert.insert("Sammy".into(), 25);
         payout_assert.insert("Yawn".into(), 25);
@@ -291,7 +293,7 @@ mod test {
             payout
                 .into_iter()
                 .map(|(x, y)| (x.clone(), y))
-                .collect::<HashMap<String, u64>>(),
+                .collect::<HashMap<String, Currency>>(),
             payout_assert
         )
     }
@@ -321,7 +323,7 @@ mod test {
         assert_eq!(yawn.balance(), 50);
 
         let payout = set2.payout(Set2Side::Side1);
-        let mut payout_assert: HashMap<String, u64> = HashMap::new();
+        let mut payout_assert: HashMap<String, Currency> = HashMap::new();
         payout_assert.insert("Sunrosa".into(), 50);
         payout_assert.insert("Sammy".into(), 38);
         payout_assert.insert("Yawn".into(), 38);
@@ -330,7 +332,7 @@ mod test {
             payout
                 .into_iter()
                 .map(|(x, y)| (x.clone(), y))
-                .collect::<HashMap<String, u64>>(),
+                .collect::<HashMap<String, Currency>>(),
             payout_assert
         )
     }
@@ -360,14 +362,14 @@ mod test {
         assert_eq!(yawn.balance(), 90);
 
         let payout = set2.payout(Set2Side::Side1);
-        let mut payout_assert: HashMap<String, u64> = HashMap::new();
+        let mut payout_assert: HashMap<String, Currency> = HashMap::new();
         payout_assert.insert("Sunrosa".into(), 70);
 
         assert_eq!(
             payout
                 .into_iter()
                 .map(|(x, y)| (x.clone(), y))
-                .collect::<HashMap<String, u64>>(),
+                .collect::<HashMap<String, Currency>>(),
             payout_assert
         )
     }
@@ -403,7 +405,7 @@ mod test {
         assert_eq!(river.balance(), 0);
 
         let payout = set2.payout(Set2Side::Side1);
-        let mut payout_assert: HashMap<String, u64> = HashMap::new();
+        let mut payout_assert: HashMap<String, Currency> = HashMap::new();
         payout_assert.insert("Sunrosa".into(), 75);
         payout_assert.insert("Sammy".into(), 150);
 
@@ -411,7 +413,7 @@ mod test {
             payout
                 .into_iter()
                 .map(|(x, y)| (x.clone(), y))
-                .collect::<HashMap<String, u64>>(),
+                .collect::<HashMap<String, Currency>>(),
             payout_assert
         )
     }
@@ -447,7 +449,7 @@ mod test {
         assert_eq!(river.balance(), 0);
 
         let payout = set2.payout(Set2Side::Side2);
-        let mut payout_assert: HashMap<String, u64> = HashMap::new();
+        let mut payout_assert: HashMap<String, Currency> = HashMap::new();
         payout_assert.insert("Yawn".into(), 75);
         payout_assert.insert("River".into(), 150);
 
@@ -455,7 +457,7 @@ mod test {
             payout
                 .into_iter()
                 .map(|(x, y)| (x.clone(), y))
-                .collect::<HashMap<String, u64>>(),
+                .collect::<HashMap<String, Currency>>(),
             payout_assert
         )
     }
