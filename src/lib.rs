@@ -104,6 +104,21 @@ impl Set2 {
         Ok(())
     }
 
+    /// Does `side` contain `player_name`?
+    pub fn side_has_player(&self, player_name: &String, side: Set2Side) -> bool {
+        let side = match side {
+            Set2Side::Side1 => &self.side_1,
+            Set2Side::Side2 => &self.side_2,
+        };
+
+        side.contains_key(player_name)
+    }
+
+    /// Does the set contain `player_name` on either side?
+    pub fn contains_player(&self, player_name: &String) -> bool {
+        self.side_1.contains_key(player_name) || self.side_2.contains_key(player_name)
+    }
+
     /// Calculate payout.
     ///
     /// # Returns
