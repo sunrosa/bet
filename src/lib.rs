@@ -59,8 +59,8 @@ impl Set2 {
     pub fn raise(
         &mut self,
         player: &mut (impl Player + ?Sized),
-        amount: Currency,
         side: Set2Side,
+        amount: Currency,
     ) -> Result<(), BetError> {
         // Pick side dependent on side argument. If this runs into a borrow checker issue for holding a mutable reference for longer than temporary lifetime, it may be possible to extract into a local function to be evaluated each time a mutable reference to side is needed.
         let side = match side {
@@ -73,6 +73,7 @@ impl Set2 {
             return Err(BetError::InsufficientBalance);
         }
 
+        // Return if player does not exist yet.
         if !side.contains_key(player.name()) {
             return Err(BetError::PlayerNotExists);
         }
@@ -83,6 +84,23 @@ impl Set2 {
         // Add amount to bet.
         *side.get_mut(player.name()).unwrap() =
             side.get(player.name()).unwrap().saturating_add(amount);
+        Ok(())
+    }
+
+    /// If no bet exists yet for `side` for `player`, make a new bet with `amount`. If a bet already exists for `side` for `player`, raise that bet by `amount`.
+    ///
+    /// # Errors
+    /// * [`InsufficientBalance`](BetError::InsufficientBalance) - Insufficient balance to bet.
+    pub fn bet_or_raise(
+        &mut self,
+        player: &mut (impl Player + ?Sized),
+        side: Set2Side,
+        amount: Currency,
+    ) -> Result<(), BetError> {
+        match self.bet(player, side, amount) {
+            Err(BetError::PlayerExists) => self.raise(player, side, amount)?,
+            x => return x,
+        }
         Ok(())
     }
 
@@ -177,14 +195,24 @@ pub trait Player {
     /// Mutable reference to the player's account balance.
     fn balance_mut(&mut self) -> &mut Currency;
 
-    /// Bet as player.
+    /// [`bet`](Set2::bet) as player.
     fn bet(&mut self, set2: &mut Set2, side: Set2Side, amount: Currency) -> Result<(), BetError> {
         set2.bet(self, side, amount)
     }
 
-    /// Raise as player.
+    /// [`raise`](Set2::raise) as player.
     fn raise(&mut self, set2: &mut Set2, side: Set2Side, amount: Currency) -> Result<(), BetError> {
-        set2.raise(self, amount, side)
+        set2.raise(self, side, amount)
+    }
+
+    /// [`bet_or_raise`](Set2::bet_or_raise) as player.
+    fn bet_or_raise(
+        &mut self,
+        set2: &mut Set2,
+        side: Set2Side,
+        amount: Currency,
+    ) -> Result<(), BetError> {
+        set2.bet_or_raise(self, side, amount)
     }
 }
 
