@@ -107,17 +107,20 @@ impl Set2 {
 
             payout.insert(
                 winning_player.0,
-                winning_player.1 + (losing_side_total as f64 * winning_ratio) as u64,
+                winning_player.1 + (losing_side_total as f64 * winning_ratio).round() as u64,
             );
 
             for player in losing_side {
-                payout.insert(player.0, (*player.1 as f64 * winning_ratio) as u64);
+                payout.insert(
+                    player.0,
+                    (*player.1 as f64 * (1.0 - winning_ratio)).round() as u64,
+                );
             }
         } else {
             for player in winning_side {
                 payout.insert(
                     player.0,
-                    player.1 + (*player.1 as f64 * losing_ratio) as u64,
+                    player.1 + (*player.1 as f64 * losing_ratio).round() as u64,
                 );
             }
         }
@@ -214,7 +217,7 @@ mod test {
     }
 
     #[test]
-    fn set2_one_winner_payout() {
+    fn set2_one_winner_payout_0() {
         let mut set2 = Set2::default();
         let mut sunrosa = BasicPlayer {
             name: "Sunrosa".into(),
@@ -242,6 +245,45 @@ mod test {
         payout_assert.insert("Sunrosa".into(), 100);
         payout_assert.insert("Sammy".into(), 25);
         payout_assert.insert("Yawn".into(), 25);
+
+        assert_eq!(
+            payout
+                .into_iter()
+                .map(|(x, y)| (x.clone(), y))
+                .collect::<HashMap<String, u64>>(),
+            payout_assert
+        )
+    }
+
+    #[test]
+    fn set2_one_winner_payout_1() {
+        let mut set2 = Set2::default();
+        let mut sunrosa = BasicPlayer {
+            name: "Sunrosa".into(),
+            balance: 100,
+        };
+        let mut sammy = BasicPlayer {
+            name: "Sammy".into(),
+            balance: 100,
+        };
+        let mut yawn = BasicPlayer {
+            name: "Yawn".into(),
+            balance: 100,
+        };
+
+        set2.bet_1(&mut sunrosa, 25).unwrap();
+        set2.bet_2(&mut sammy, 50).unwrap();
+        set2.bet_2(&mut yawn, 50).unwrap();
+
+        assert_eq!(sunrosa.balance(), 75);
+        assert_eq!(sammy.balance(), 50);
+        assert_eq!(yawn.balance(), 50);
+
+        let payout = set2.payout(Set2Side::Side1);
+        let mut payout_assert: HashMap<String, u64> = HashMap::new();
+        payout_assert.insert("Sunrosa".into(), 50);
+        payout_assert.insert("Sammy".into(), 38);
+        payout_assert.insert("Yawn".into(), 38);
 
         assert_eq!(
             payout
