@@ -127,10 +127,11 @@ impl Set2 {
         let winning_ratio = winning_side_total as f64 / losing_side_total as f64;
         let losing_ratio = losing_side_total as f64 / winning_side_total as f64;
 
-        // The winning side contains only one person, and they've bet less than the total of the losing side, refund the losing side for the percent that the winning player did not bet. None of this applies if there are multiple players who bet on the winning side, as then they must compete with each other for percent payout. This is for incentive to match opposing bets as the first better on a side. It's in a way, emulated odds.
-        //
-        // For example, if the winning player (singular!) bet 50, and the losing side bet a total of 100, the winning player will get a payout of 50 (their own bet) + 50 (0.5 * losing side bet), and the losing side will be refunded for 50. As the winning player bet 50/100, which is 0.5.
         if winning_side.len() == 1 && winning_side_total < losing_side_total {
+            // The winning side contains only one person, and they've bet less than the total of the losing side, refund the losing side for the percent that the winning player did not bet. None of this applies if there are multiple players who bet on the winning side, as then they must compete with each other for percent payout. This is for incentive to match opposing bets as the first better on a side. It's in a way, emulated odds.
+            //
+            // For example, if the winning player (singular!) bet 50, and the losing side bet a total of 100, the winning player will get a payout of 50 (their own bet) + 50 (0.5 * losing side bet), and the losing side will be refunded for 50. As the winning player bet 50/100, which is 0.5.
+
             let winning_player = winning_side.iter().next().unwrap();
 
             payout.insert(
