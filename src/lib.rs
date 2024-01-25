@@ -16,28 +16,16 @@ pub struct Set2 {
 }
 
 impl Set2 {
-    /// Bet as `player` on side 1 with `amount`. Reduces the player's balance by amount if they have enough.
+    /// Bet as `player` on `side` with `amount`. Reduces the player's balance by amount if they have enough.
     ///
     /// # Errors
     /// * [`InsufficientBalance`](BetError::InsufficientBalance) - Insufficient balance to bet.
     /// * [`PlayerExists`](BetError::PlayerExists) - Player cannot initiate a new bet, as they've already bet.
-    pub fn bet_1(&mut self, player: &mut impl Player, amount: Currency) -> Result<(), BetError> {
-        self.bet_side(player, amount, Set2Side::Side1)
-    }
-    /// Bet as `player` on side 2 with `amount`. Reduces the player's balance by amount if they have enough.
-    ///
-    /// # Errors
-    /// * [`InsufficientBalance`](BetError::InsufficientBalance) - Insufficient balance to bet.
-    /// * [`PlayerExists`](BetError::PlayerExists) - Player cannot initiate a new bet, as they've already bet.
-    pub fn bet_2(&mut self, player: &mut impl Player, amount: Currency) -> Result<(), BetError> {
-        self.bet_side(player, amount, Set2Side::Side2)
-    }
-
-    fn bet_side(
+    pub fn bet(
         &mut self,
-        player: &mut impl Player,
-        amount: Currency,
+        player: &mut (impl Player + ?Sized),
         side: Set2Side,
+        amount: Currency,
     ) -> Result<(), BetError> {
         // Pick side dependent on side argument. If this runs into a borrow checker issue for holding a mutable reference for longer than temporary lifetime, it may be possible to extract into a local function to be evaluated each time a mutable reference to side is needed.
         let side = match side {
@@ -63,26 +51,14 @@ impl Set2 {
         Ok(())
     }
 
-    /// Raise an already-existing bet on side 1 as `player` for `amount`. Reduces the player's balance by amount if they have enough.
+    /// Raise an already-existing bet on `side` as `player` for `amount`. Reduces the player's balance by amount if they have enough.
     ///
     /// # Errors
     /// * [`InsufficientBalance`](BetError::InsufficientBalance) - Insufficient balance to bet.
     /// * [`PlayerNotExists`](BetError::PlayerNotExists) - Player cannot raise their bet, as they've yet to bet at all.
-    pub fn raise_1(&mut self, player: &mut impl Player, amount: Currency) -> Result<(), BetError> {
-        self.raise_side(player, amount, Set2Side::Side1)
-    }
-    /// Raise an already-existing bet on side 2 as `player` for `amount`. Reduces the player's balance by amount if they have enough.
-    ///
-    /// # Errors
-    /// * [`InsufficientBalance`](BetError::InsufficientBalance) - Insufficient balance to bet.
-    /// * [`PlayerNotExists`](BetError::PlayerNotExists) - Player cannot raise their bet, as they've yet to bet at all.
-    pub fn raise_2(&mut self, player: &mut impl Player, amount: Currency) -> Result<(), BetError> {
-        self.raise_side(player, amount, Set2Side::Side2)
-    }
-
-    fn raise_side(
+    pub fn raise(
         &mut self,
-        player: &mut impl Player,
+        player: &mut (impl Player + ?Sized),
         amount: Currency,
         side: Set2Side,
     ) -> Result<(), BetError> {
@@ -198,6 +174,16 @@ pub trait Player {
     fn balance(&self) -> Currency;
     /// Mutable reference to the player's account balance.
     fn balance_mut(&mut self) -> &mut Currency;
+
+    /// Bet as player.
+    fn bet(&mut self, set2: &mut Set2, side: Set2Side, amount: Currency) -> Result<(), BetError> {
+        set2.bet(self, side, amount)
+    }
+
+    /// Raise as player.
+    fn raise(&mut self, set2: &mut Set2, side: Set2Side, amount: Currency) -> Result<(), BetError> {
+        set2.raise(self, amount, side)
+    }
 }
 
 #[cfg(test)]
@@ -233,7 +219,7 @@ mod test {
         };
 
         assert_eq!(
-            set2.bet_1(&mut player, 50),
+            set2.bet(&mut player, Set2Side::Side2, 50),
             Err(BetError::InsufficientBalance)
         );
         assert_eq!(
@@ -251,7 +237,7 @@ mod test {
             balance: 50,
         };
 
-        assert_eq!(set2.bet_1(&mut player, 50), Ok(()));
+        assert_eq!(set2.bet(&mut player, Set2Side::Side1, 50), Ok(()));
         assert_eq!(
             player.balance(),
             0,
@@ -275,9 +261,9 @@ mod test {
             balance: 100,
         };
 
-        set2.bet_1(&mut sunrosa, 50).unwrap();
-        set2.bet_2(&mut sammy, 50).unwrap();
-        set2.bet_2(&mut yawn, 50).unwrap();
+        set2.bet(&mut sunrosa, Set2Side::Side1, 50).unwrap();
+        set2.bet(&mut sammy, Set2Side::Side2, 50).unwrap();
+        set2.bet(&mut yawn, Set2Side::Side2, 50).unwrap();
 
         assert_eq!(sunrosa.balance(), 50);
         assert_eq!(sammy.balance(), 50);
@@ -314,9 +300,9 @@ mod test {
             balance: 100,
         };
 
-        set2.bet_1(&mut sunrosa, 25).unwrap();
-        set2.bet_2(&mut sammy, 50).unwrap();
-        set2.bet_2(&mut yawn, 50).unwrap();
+        set2.bet(&mut sunrosa, Set2Side::Side1, 25).unwrap();
+        set2.bet(&mut sammy, Set2Side::Side2, 50).unwrap();
+        set2.bet(&mut yawn, Set2Side::Side2, 50).unwrap();
 
         assert_eq!(sunrosa.balance(), 75);
         assert_eq!(sammy.balance(), 50);
@@ -353,9 +339,9 @@ mod test {
             balance: 100,
         };
 
-        set2.bet_1(&mut sunrosa, 50).unwrap();
-        set2.bet_2(&mut sammy, 10).unwrap();
-        set2.bet_2(&mut yawn, 10).unwrap();
+        set2.bet(&mut sunrosa, Set2Side::Side1, 50).unwrap();
+        set2.bet(&mut sammy, Set2Side::Side2, 10).unwrap();
+        set2.bet(&mut yawn, Set2Side::Side2, 10).unwrap();
 
         assert_eq!(sunrosa.balance(), 50);
         assert_eq!(sammy.balance(), 90);
@@ -394,10 +380,10 @@ mod test {
             balance: 100,
         };
 
-        set2.bet_1(&mut sunrosa, 25).unwrap();
-        set2.bet_1(&mut sammy, 50).unwrap();
-        set2.bet_2(&mut yawn, 50).unwrap();
-        set2.bet_2(&mut river, 100).unwrap();
+        set2.bet(&mut sunrosa, Set2Side::Side1, 25).unwrap();
+        set2.bet(&mut sammy, Set2Side::Side1, 50).unwrap();
+        set2.bet(&mut yawn, Set2Side::Side2, 50).unwrap();
+        set2.bet(&mut river, Set2Side::Side2, 100).unwrap();
 
         assert_eq!(sunrosa.balance(), 75);
         assert_eq!(sammy.balance(), 50);
@@ -438,10 +424,10 @@ mod test {
             balance: 100,
         };
 
-        set2.bet_1(&mut sunrosa, 25).unwrap();
-        set2.bet_1(&mut sammy, 50).unwrap();
-        set2.bet_2(&mut yawn, 50).unwrap();
-        set2.bet_2(&mut river, 100).unwrap();
+        set2.bet(&mut sunrosa, Set2Side::Side1, 25).unwrap();
+        set2.bet(&mut sammy, Set2Side::Side1, 50).unwrap();
+        set2.bet(&mut yawn, Set2Side::Side2, 50).unwrap();
+        set2.bet(&mut river, Set2Side::Side2, 100).unwrap();
 
         assert_eq!(sunrosa.balance(), 75);
         assert_eq!(sammy.balance(), 50);
