@@ -28,6 +28,10 @@ impl Set2 {
             return Err(BetError::InsufficientBalance);
         }
 
+        // Reduce balance
+        *player.balance_mut() = player.balance().saturating_sub(amount);
+
+        // Add bet
         side.push(Bet {
             player_name: player.name().clone(),
             amount,
@@ -59,6 +63,7 @@ pub struct Bet {
 pub trait Player {
     fn name(&self) -> &String;
     fn balance(&self) -> u64;
+    fn balance_mut(&mut self) -> &mut u64;
 }
 
 #[cfg(test)]
@@ -79,6 +84,10 @@ mod test {
         fn balance(&self) -> u64 {
             self.balance
         }
+
+        fn balance_mut(&mut self) -> &mut u64 {
+            &mut self.balance
+        }
     }
 
     #[test]
@@ -93,6 +102,11 @@ mod test {
             set2.bet_1(&mut player, 50),
             Err(BetError::InsufficientBalance)
         );
+        assert_eq!(
+            player.balance(),
+            1,
+            "Player balance was reduced despite being insufficient."
+        );
     }
 
     #[test]
@@ -104,5 +118,10 @@ mod test {
         };
 
         assert_eq!(set2.bet_1(&mut player, 50), Ok(()));
+        assert_eq!(
+            player.balance(),
+            0,
+            "Player balance was not reduced despite the bet being successfully added."
+        );
     }
 }
