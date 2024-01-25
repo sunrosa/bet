@@ -86,7 +86,7 @@ mod test {
     }
 
     #[test]
-    fn set2_bet() {
+    fn set2_insufficient_balance() {
         let mut set2 = Set2::<BasicPlayer>::default();
         let player = BasicPlayer {
             name: "Sunrosa".into(),
@@ -94,5 +94,16 @@ mod test {
         };
 
         assert_eq!(set2.bet_1(player, 50), Err(BetError::InsufficientBalance));
+    }
+
+    #[test]
+    fn set2_bet() {
+        let mut set2 = Set2::<BasicPlayer>::default();
+        let player = BasicPlayer {
+            name: "Sunrosa".into(),
+            balance: 50,
+        };
+
+        assert_eq!(set2.bet_1(player, 50), Ok(()));
     }
 }
