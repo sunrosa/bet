@@ -111,7 +111,7 @@ impl Set2 {
             );
 
             for player in losing_side {
-                payout.insert(player.0, (*player.1 as f64 * losing_ratio) as u64);
+                payout.insert(player.0, (*player.1 as f64 * winning_ratio) as u64);
             }
         } else {
             for player in winning_side {
