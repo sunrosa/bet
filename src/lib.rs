@@ -29,7 +29,7 @@ where
             return Err(BetError::InsufficientBalance);
         }
 
-        side.push(Bet::new(player, amount));
+        side.push(Bet { player, amount });
         Ok(())
     }
 }
@@ -45,15 +45,6 @@ where
 {
     pub player: P,
     pub amount: u64,
-}
-
-impl<P> Bet<P>
-where
-    P: Player,
-{
-    pub fn new(player: P, amount: u64) -> Self {
-        Self { player, amount }
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
