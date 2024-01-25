@@ -336,6 +336,43 @@ mod test {
     }
 
     #[test]
+    fn set2_one_winner_payout_2() {
+        let mut set2 = Set2::default();
+        let mut sunrosa = BasicPlayer {
+            name: "Sunrosa".into(),
+            balance: 100,
+        };
+        let mut sammy = BasicPlayer {
+            name: "Sammy".into(),
+            balance: 100,
+        };
+        let mut yawn = BasicPlayer {
+            name: "Yawn".into(),
+            balance: 100,
+        };
+
+        set2.bet_1(&mut sunrosa, 50).unwrap();
+        set2.bet_2(&mut sammy, 10).unwrap();
+        set2.bet_2(&mut yawn, 10).unwrap();
+
+        assert_eq!(sunrosa.balance(), 50);
+        assert_eq!(sammy.balance(), 90);
+        assert_eq!(yawn.balance(), 90);
+
+        let payout = set2.payout(Set2Side::Side1);
+        let mut payout_assert: HashMap<String, u64> = HashMap::new();
+        payout_assert.insert("Sunrosa".into(), 70);
+
+        assert_eq!(
+            payout
+                .into_iter()
+                .map(|(x, y)| (x.clone(), y))
+                .collect::<HashMap<String, u64>>(),
+            payout_assert
+        )
+    }
+
+    #[test]
     fn set2_multiplayer_0() {
         let mut set2 = Set2::default();
         let mut sunrosa = BasicPlayer {
