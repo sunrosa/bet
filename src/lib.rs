@@ -1,5 +1,8 @@
 use std::collections::HashMap;
 
+use thiserror::Error;
+
+/// Betting set with two outcomes. A player can bet on both sides at once.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Set2 {
     /// * `0` - Player name.
@@ -11,9 +14,19 @@ pub struct Set2 {
 }
 
 impl Set2 {
+    /// Bet as `player` on side 1 with `amount`. Reduces the player's balance by amount if they have enough.
+    ///
+    /// # Errors
+    /// * [`InsufficientBalance`](BetError::InsufficientBalance) - Insufficient balance to bet.
+    /// * [`PlayerExists`](BetError::PlayerExists) - Player cannot initiate a new bet, as they've already bet.
     pub fn bet_1(&mut self, player: &mut impl Player, amount: u64) -> Result<(), BetError> {
         self.bet_side(player, amount, Set2Side::Side1)
     }
+    /// Bet as `player` on side 2 with `amount`. Reduces the player's balance by amount if they have enough.
+    ///
+    /// # Errors
+    /// * [`InsufficientBalance`](BetError::InsufficientBalance) - Insufficient balance to bet.
+    /// * [`PlayerExists`](BetError::PlayerExists) - Player cannot initiate a new bet, as they've already bet.
     pub fn bet_2(&mut self, player: &mut impl Player, amount: u64) -> Result<(), BetError> {
         self.bet_side(player, amount, Set2Side::Side2)
     }
@@ -48,9 +61,19 @@ impl Set2 {
         Ok(())
     }
 
+    /// Raise an already-existing bet on side 1 as `player` for `amount`. Reduces the player's balance by amount if they have enough.
+    ///
+    /// # Errors
+    /// * [`InsufficientBalance`](BetError::InsufficientBalance) - Insufficient balance to bet.
+    /// * [`PlayerNotExists`](BetError::PlayerNotExists) - Player cannot raise their bet, as they've yet to bet at all.
     pub fn raise_1(&mut self, player: &mut impl Player, amount: u64) -> Result<(), BetError> {
         self.raise_side(player, amount, Set2Side::Side1)
     }
+    /// Raise an already-existing bet on side 2 as `player` for `amount`. Reduces the player's balance by amount if they have enough.
+    ///
+    /// # Errors
+    /// * [`InsufficientBalance`](BetError::InsufficientBalance) - Insufficient balance to bet.
+    /// * [`PlayerNotExists`](BetError::PlayerNotExists) - Player cannot raise their bet, as they've yet to bet at all.
     pub fn raise_2(&mut self, player: &mut impl Player, amount: u64) -> Result<(), BetError> {
         self.raise_side(player, amount, Set2Side::Side2)
     }
@@ -85,6 +108,11 @@ impl Set2 {
         Ok(())
     }
 
+    /// Calculate payout.
+    ///
+    /// # Returns
+    /// * `K` - Immutable reference to player name.
+    /// * `V` - Amount.
     pub fn payout<'a>(&'a self, winner: Set2Side) -> HashMap<&'a String, u64> {
         let mut payout = HashMap::new();
 
@@ -138,22 +166,34 @@ impl Default for Set2 {
     }
 }
 
+/// Side of a [`Set2`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Set2Side {
     Side1,
     Side2,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Error)]
 pub enum BetError {
+    /// Player does not have enough balance to make the bet.
+    #[error("Player does not have enough balance to make the bet.")]
     InsufficientBalance,
+
+    /// Player already exists in the set, thus a new bet cannot be placed.
+    #[error("Player already exists in the set, thus a new bet cannot be placed.")]
     PlayerExists,
+
+    /// Player does not exist in the set, thus a raise cannot be made.
+    #[error("Player does not exist in the set, thus a raise cannot be made.")]
     PlayerNotExists,
 }
 
 pub trait Player {
+    /// The player's name.
     fn name(&self) -> &String;
+    /// The player's account balance.
     fn balance(&self) -> u64;
+    /// Mutable reference to the player's account balance.
     fn balance_mut(&mut self) -> &mut u64;
 }
 
