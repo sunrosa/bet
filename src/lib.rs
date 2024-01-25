@@ -152,6 +152,7 @@ pub enum Set2Side {
     Side2,
 }
 
+/// An error with making a bet or a raise.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Error)]
 pub enum BetError {
     /// Player does not have enough balance to make the bet.
@@ -167,6 +168,7 @@ pub enum BetError {
     PlayerNotExists,
 }
 
+/// The player that makes bets.
 pub trait Player {
     /// The player's name.
     fn name(&self) -> &String;
