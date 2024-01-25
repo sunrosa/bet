@@ -34,6 +34,19 @@ where
     }
 }
 
+impl<P> Default for Set2<P>
+where
+    P: Player,
+{
+    fn default() -> Self {
+        Self {
+            side_1: Vec::new(),
+            side_2: Vec::new(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum BetError {
     InsufficientBalance,
 }
@@ -47,23 +60,39 @@ where
     pub amount: u64,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-struct BasicPlayer {
-    pub name: String,
-    pub balance: u64,
-}
-
-impl Player for BasicPlayer {
-    fn name(&self) -> &String {
-        &self.name
-    }
-
-    fn balance(&self) -> u64 {
-        self.balance
-    }
-}
-
 pub trait Player {
     fn name(&self) -> &String;
     fn balance(&self) -> u64;
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+    struct BasicPlayer {
+        name: String,
+        balance: u64,
+    }
+
+    impl Player for BasicPlayer {
+        fn name(&self) -> &String {
+            &self.name
+        }
+
+        fn balance(&self) -> u64 {
+            self.balance
+        }
+    }
+
+    #[test]
+    fn set2_bet() {
+        let mut set2 = Set2::<BasicPlayer>::default();
+        let player = BasicPlayer {
+            name: "Sunrosa".into(),
+            balance: 1,
+        };
+
+        assert_eq!(set2.bet_1(player, 50), Err(BetError::InsufficientBalance));
+    }
 }
