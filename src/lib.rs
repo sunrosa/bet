@@ -1,3 +1,5 @@
+//! Betting should be blind. Players betting solo are at a disadvantage, and should always start low until they see their opponents' bets. Instead, if all bets are blind until betting is closed, this problem is avoided.
+
 use std::collections::HashMap;
 
 use thiserror::Error;
@@ -403,6 +405,60 @@ mod test {
                 .collect::<HashMap<String, Currency>>(),
             payout_assert
         )
+    }
+
+    #[test]
+    fn set2_two_winners_v_one_0() {
+        let mut set2 = Set2::default();
+        let mut sunrosa = BasicPlayer {
+            name: "Sunrosa".into(),
+            balance: 100,
+        };
+        let mut sammy = BasicPlayer {
+            name: "Sammy".into(),
+            balance: 100,
+        };
+        let mut yawn = BasicPlayer {
+            name: "Yawn".into(),
+            balance: 100,
+        };
+
+        set2.bet(&mut sunrosa, Set2Side::Side1, 50).unwrap();
+        set2.bet(&mut sammy, Set2Side::Side2, 10).unwrap();
+        set2.bet(&mut yawn, Set2Side::Side2, 10).unwrap();
+
+        let payout = set2.payout(Set2Side::Side2);
+
+        assert!(!payout.contains_key(&String::from("Sunrosa")));
+        assert_eq!(payout[&"Sammy".to_owned()], 35);
+        assert_eq!(payout[&"Yawn".to_owned()], 35);
+    }
+
+    #[test]
+    fn set2_two_winners_v_one_1() {
+        let mut set2 = Set2::default();
+        let mut sunrosa = BasicPlayer {
+            name: "Sunrosa".into(),
+            balance: 100,
+        };
+        let mut sammy = BasicPlayer {
+            name: "Sammy".into(),
+            balance: 100,
+        };
+        let mut yawn = BasicPlayer {
+            name: "Yawn".into(),
+            balance: 100,
+        };
+
+        set2.bet(&mut sunrosa, Set2Side::Side1, 50).unwrap();
+        set2.bet(&mut sammy, Set2Side::Side2, 20).unwrap();
+        set2.bet(&mut yawn, Set2Side::Side2, 10).unwrap();
+
+        let payout = set2.payout(Set2Side::Side2);
+
+        assert!(!payout.contains_key(&String::from("Sunrosa")));
+        assert_eq!(payout[&"Sammy".to_owned()], 53);
+        assert_eq!(payout[&"Yawn".to_owned()], 27);
     }
 
     #[test]
