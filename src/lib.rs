@@ -1,4 +1,6 @@
 //! Betting should be blind. Players betting solo are at a disadvantage, and should always start low until they see their opponents' bets. Instead, if all bets are blind until betting is closed, this problem is avoided.
+//!
+//! After betting is over, a timeline of bets could be shown.
 
 use std::collections::HashMap;
 
