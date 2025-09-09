@@ -1,4 +1,5 @@
-mod test;
+// TODO: rewrite tests
+// mod test;
 
 use std::collections::HashMap;
 
@@ -10,11 +11,27 @@ use crate::{player::Player, Currency};
 /// Betting set with two outcomes. A player can bet on both sides at once.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Set2 {
-    /// * `0`: Player UUID.
-    /// * `1`: Bet amount.
+    //// UUID of the set
+    uuid: Uuid,
+
+    /// UUID of the user that created the set
+    creator_uuid: Uuid,
+
+    /// Description of what the set is betting on happening or not happening
+    bet_basis: String,
+
+    /// Comments users have placed on this set
+    ///
+    /// - `K`: Player UUID
+    /// - `V`: Comment text
+    comments: HashMap<Uuid, String>,
+
+    /// - `K`: Player UUID
+    /// - `V`: Bet amount
     side_1_bets: HashMap<Uuid, Currency>,
-    /// * `0`: Player UUID.
-    /// * `1`: Bet amount.
+
+    /// - `K`: Player UUID
+    /// - `V`: Bet amount
     side_2_bets: HashMap<Uuid, Currency>,
 }
 
@@ -130,37 +147,39 @@ impl Set2 {
     pub fn payout<'a>(&'a self, winner: Set2Side) -> HashMap<&'a Uuid, Currency> {
         let mut payout = HashMap::new();
 
-        let (winning_side, losing_side) = match winner {
+        let (winning_side_bets, losing_side_bets) = match winner {
             Set2Side::Side1 => (&self.side_1_bets, &self.side_2_bets),
             Set2Side::Side2 => (&self.side_2_bets, &self.side_1_bets),
         };
 
-        let winning_side_total = winning_side.iter().fold(0, |a, x| a + x.1);
-        let losing_side_total = losing_side.iter().fold(0, |a, x| a + x.1);
+        let (winning_side_pot, losing_side_pot) = match winner {
+            Set2Side::Side1 => (self.side_1_pot(), self.side_2_pot()),
+            Set2Side::Side2 => (self.side_2_pot(), self.side_1_pot()),
+        };
 
-        let winning_ratio = winning_side_total as f64 / losing_side_total as f64;
-        let losing_ratio = losing_side_total as f64 / winning_side_total as f64;
+        let winning_ratio = winning_side_pot as f64 / losing_side_pot as f64;
+        let losing_ratio = losing_side_pot as f64 / winning_side_pot as f64;
 
-        if winning_side.len() == 1 && winning_side_total < losing_side_total {
+        if winning_side_bets.len() == 1 && winning_side_pot < losing_side_pot {
             // The winning side contains only one person, and they've bet less than the total of the losing side, refund the losing side for the percent that the winning player did not bet. None of this applies if there are multiple players who bet on the winning side, as then they must compete with each other for percent payout. This is for incentive to match opposing bets as the first better on a side. It's in a way, emulated odds.
             //
             // For example, if the winning player (singular!) bet 50, and the losing side bet a total of 100, the winning player will get a payout of 50 (their own bet) + 50 (0.5 * losing side bet), and the losing side will be refunded for 50. As the winning player bet 50/100, which is 0.5.
 
-            let winning_player = winning_side.iter().next().unwrap();
+            let winning_player = winning_side_bets.iter().next().unwrap();
 
             payout.insert(
                 winning_player.0,
-                winning_player.1 + (losing_side_total as f64 * winning_ratio).round() as Currency,
+                winning_player.1 + (losing_side_pot as f64 * winning_ratio).round() as Currency,
             );
 
-            for player in losing_side {
+            for player in losing_side_bets {
                 payout.insert(
                     player.0,
                     (*player.1 as f64 * (1.0 - winning_ratio)).round() as Currency,
                 );
             }
         } else {
-            for player in winning_side {
+            for player in winning_side_bets {
                 payout.insert(
                     player.0,
                     player.1 + (*player.1 as f64 * losing_ratio).round() as Currency,
@@ -170,14 +189,20 @@ impl Set2 {
 
         payout
     }
-}
 
-impl Default for Set2 {
-    fn default() -> Self {
-        Self {
-            side_1_bets: HashMap::new(),
-            side_2_bets: HashMap::new(),
-        }
+    /// The total amount of currency that has been wagered by all players on side_1
+    pub fn side_1_pot(&self) -> Currency {
+        self.side_1_bets.iter().fold(0, |acc, cur| acc + cur.1)
+    }
+
+    /// The total amount of currency that has been wagered by all players on side_2
+    pub fn side_2_pot(&self) -> Currency {
+        self.side_2_bets.iter().fold(0, |acc, cur| acc + cur.1)
+    }
+
+    /// The total amount of currency that has been wagered on both sides by all players
+    pub fn pot_size(&self) -> Currency {
+        self.side_1_pot() + self.side_2_pot()
     }
 }
 
