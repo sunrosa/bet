@@ -1,6 +1,4 @@
-//! Betting should be blind. Players betting solo are at a disadvantage, and should always start low until they see their opponents' bets. Instead, if all bets are blind until betting is closed, this problem is avoided.
-//!
-//! After betting is over, a timeline of bets could be shown.
+//! Library backing [`bet-server`](https://github.com/sunrosa/bet-server)
 //!
 //! # Winning distribution
 //! Regarding the winner, winnings are distributed according to multiple factors.
@@ -13,8 +11,10 @@
 //!
 //! Regardless, if this spamming remains a problem, minimum bets could be enforced. 3 options would be to scale minimum wagers with the number of bets a person has currently active, or the scale minimum wagers with the person's balance, or both at once, or to hard-cap maximum active bets (that sucks though).
 //!
-//! # N-sided sets
-//! This is probably not ideal for small playgroups. A lot of the time, there may be no winner. Still, it should be implemented eventually.
+//! # Notes
+//! - Betting should be blind. Players betting solo are at a disadvantage, and should always start low until they see their opponents' bets. Instead, if all bets are blind until betting is closed, this problem is avoided.
+//! - After betting is over, a timeline of bets could be shown.
+//! - N-sided sets are probably not ideal for small playgroups. A lot of the time, there may be no winner. Still, it should be implemented eventually.
 
 pub mod player;
 pub mod set2;

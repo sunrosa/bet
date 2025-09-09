@@ -1,5 +1,7 @@
 [package]
 name = "bet"
+authors = ["Ibis Sunrosa <@drsunrosa@gmail.com>"]
+description = "Backing library for bet-server (at https://github.com/sunrosa/bet-server)"
 version = "0.1.0"
 edition = "2021"
 
@@ -8,3 +10,19 @@ edition = "2021"
 [dependencies]
 thiserror = "1.0.56"
 uuid = { version = "1.18.1", features = ["v4"] }
+
+# Optimize libraries
+[profile.dev.package."*"]
+opt-level = 3
+
+# Slightly optimize this code
+# [profile.dev]
+# opt-level = 1
+
+# Aggressive optimizations
+[profile.release]
+lto = true
+opt-level = 3
+codegen-units = 1
+incremental = false
+debug = false
