@@ -64,7 +64,7 @@ impl Set2 {
         amount: Currency,
     ) -> Result<(), BetError> {
         // Pick side dependent on side argument. If this runs into a borrow checker issue for holding a mutable reference for longer than temporary lifetime, it may be possible to extract into a local function to be evaluated each time a mutable reference to side is needed.
-        let side = match side {
+        let side_bets = match side {
             Set2Side::Side1 => &mut self.side_1_bets,
             Set2Side::Side2 => &mut self.side_2_bets,
         };
@@ -75,7 +75,7 @@ impl Set2 {
         }
 
         // Return if player already exists.
-        if side.contains_key(player.uuid()) {
+        if side_bets.contains_key(player.uuid()) {
             return Err(BetError::PlayerExists);
         }
 
@@ -83,7 +83,7 @@ impl Set2 {
         *player.balance_mut() = player.balance().saturating_sub(amount);
 
         // Add bet.
-        side.insert(*player.uuid(), amount);
+        side_bets.insert(*player.uuid(), amount);
         Ok(())
     }
 
@@ -99,7 +99,7 @@ impl Set2 {
         amount: Currency,
     ) -> Result<(), BetError> {
         // Pick side dependent on side argument. If this runs into a borrow checker issue for holding a mutable reference for longer than temporary lifetime, it may be possible to extract into a local function to be evaluated each time a mutable reference to side is needed.
-        let side = match side {
+        let side_bets = match side {
             Set2Side::Side1 => &mut self.side_1_bets,
             Set2Side::Side2 => &mut self.side_2_bets,
         };
@@ -110,7 +110,7 @@ impl Set2 {
         }
 
         // Return if player does not exist yet.
-        if !side.contains_key(player.uuid()) {
+        if !side_bets.contains_key(player.uuid()) {
             return Err(BetError::PlayerNotExists);
         }
 
@@ -118,8 +118,8 @@ impl Set2 {
         *player.balance_mut() = player.balance().saturating_sub(amount);
 
         // Add amount to bet.
-        *side.get_mut(player.uuid()).unwrap() =
-            side.get(player.uuid()).unwrap().saturating_add(amount);
+        *side_bets.get_mut(player.uuid()).unwrap() =
+            side_bets.get(player.uuid()).unwrap().saturating_add(amount);
         Ok(())
     }
 
@@ -142,12 +142,12 @@ impl Set2 {
 
     /// Does `side` contain `player_name`?
     pub fn side_has_player(&self, player_uuid: &PlayerUuid, side: Set2Side) -> bool {
-        let side = match side {
+        let side_bets = match side {
             Set2Side::Side1 => &self.side_1_bets,
             Set2Side::Side2 => &self.side_2_bets,
         };
 
-        side.contains_key(player_uuid)
+        side_bets.contains_key(player_uuid)
     }
 
     /// Does the set contain `player_name` on either side?
