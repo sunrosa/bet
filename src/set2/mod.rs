@@ -6,16 +6,22 @@ use std::collections::HashMap;
 use thiserror::Error;
 use uuid::Uuid;
 
-use crate::{player::Player, Currency};
+use crate::{
+    player::{Player, PlayerUuid},
+    Currency,
+};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct SetUuid(pub Uuid);
 
 /// Betting set with two outcomes. A player can bet on both sides at once.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Set2 {
     //// UUID of the set
-    uuid: Uuid,
+    uuid: SetUuid,
 
     /// UUID of the user that created the set
-    creator_uuid: Uuid,
+    creator_uuid: PlayerUuid,
 
     /// Description of what the set is betting on happening or not happening
     bet_basis: String,
@@ -24,15 +30,15 @@ pub struct Set2 {
     ///
     /// - `K`: Player UUID
     /// - `V`: Comment text
-    comments: HashMap<Uuid, String>,
+    comments: HashMap<PlayerUuid, String>,
 
     /// - `K`: Player UUID
     /// - `V`: Bet amount
-    side_1_bets: HashMap<Uuid, Currency>,
+    side_1_bets: HashMap<PlayerUuid, Currency>,
 
     /// - `K`: Player UUID
     /// - `V`: Bet amount
-    side_2_bets: HashMap<Uuid, Currency>,
+    side_2_bets: HashMap<PlayerUuid, Currency>,
 }
 
 impl Set2 {
@@ -125,7 +131,7 @@ impl Set2 {
     }
 
     /// Does `side` contain `player_name`?
-    pub fn side_has_player(&self, player_uuid: &Uuid, side: Set2Side) -> bool {
+    pub fn side_has_player(&self, player_uuid: &PlayerUuid, side: Set2Side) -> bool {
         let side = match side {
             Set2Side::Side1 => &self.side_1_bets,
             Set2Side::Side2 => &self.side_2_bets,
@@ -135,7 +141,7 @@ impl Set2 {
     }
 
     /// Does the set contain `player_name` on either side?
-    pub fn contains_player(&self, player_uuid: &Uuid) -> bool {
+    pub fn contains_player(&self, player_uuid: &PlayerUuid) -> bool {
         self.side_1_bets.contains_key(player_uuid) || self.side_2_bets.contains_key(player_uuid)
     }
 
@@ -144,7 +150,7 @@ impl Set2 {
     /// # Returns
     /// - `K`: Player UUID.
     /// - `V`: Amount.
-    pub fn payout<'a>(&'a self, winner: Set2Side) -> HashMap<&'a Uuid, Currency> {
+    pub fn payout<'a>(&'a self, winner: Set2Side) -> HashMap<&'a PlayerUuid, Currency> {
         let mut payout = HashMap::new();
 
         let (winning_side_bets, losing_side_bets) = match winner {

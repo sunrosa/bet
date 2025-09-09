@@ -5,12 +5,15 @@ use crate::{
     Currency,
 };
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct PlayerUuid(pub Uuid);
+
 /// The player that makes bets.
 pub trait Player {
     /// The player's name.
     fn name(&self) -> &String;
     /// The player's UUID
-    fn uuid(&self) -> &Uuid;
+    fn uuid(&self) -> &PlayerUuid;
     /// The player's account balance.
     fn balance(&self) -> Currency;
     /// Mutable reference to the player's account balance.
@@ -40,7 +43,7 @@ pub trait Player {
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct BasicPlayer {
     pub name: String,
-    pub uuid: Uuid,
+    pub uuid: PlayerUuid,
     pub balance: Currency,
 }
 
@@ -48,7 +51,7 @@ impl BasicPlayer {
     pub fn new(name: String, balance: Currency) -> Self {
         Self {
             name,
-            uuid: Uuid::new_v4(),
+            uuid: PlayerUuid(Uuid::new_v4()),
             balance,
         }
     }
@@ -59,7 +62,7 @@ impl Player for BasicPlayer {
         &self.name
     }
 
-    fn uuid(&self) -> &Uuid {
+    fn uuid(&self) -> &PlayerUuid {
         &self.uuid
     }
 
