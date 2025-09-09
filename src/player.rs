@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
@@ -5,7 +6,7 @@ use crate::{
     Currency,
 };
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct PlayerUuid(pub Uuid);
 
 /// The player that makes bets.

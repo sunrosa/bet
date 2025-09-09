@@ -2,6 +2,7 @@ mod test;
 
 use std::collections::HashMap;
 
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -10,7 +11,7 @@ use crate::{
     Currency,
 };
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct SetUuid(pub Uuid);
 
 /// Betting set with two outcomes. A player can bet on both sides at once.
