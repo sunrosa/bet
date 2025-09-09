@@ -1,3 +1,5 @@
+use uuid::Uuid;
+
 use crate::{
     set2::{BetError, Set2, Set2Side},
     Currency,
@@ -7,6 +9,8 @@ use crate::{
 pub trait Player {
     /// The player's name.
     fn name(&self) -> &String;
+    /// The player's UUID
+    fn uuid(&self) -> &Uuid;
     /// The player's account balance.
     fn balance(&self) -> Currency;
     /// Mutable reference to the player's account balance.
@@ -36,12 +40,27 @@ pub trait Player {
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct BasicPlayer {
     pub name: String,
+    pub uuid: Uuid,
     pub balance: Currency,
+}
+
+impl BasicPlayer {
+    pub fn new(name: String, balance: Currency) -> Self {
+        Self {
+            name,
+            uuid: Uuid::new_v4(),
+            balance,
+        }
+    }
 }
 
 impl Player for BasicPlayer {
     fn name(&self) -> &String {
         &self.name
+    }
+
+    fn uuid(&self) -> &Uuid {
+        &self.uuid
     }
 
     fn balance(&self) -> Currency {

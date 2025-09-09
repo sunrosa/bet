@@ -16,7 +16,7 @@
 //! # N-sided sets
 //! This is probably not ideal for small playgroups. A lot of the time, there may be no winner. Still, it should be implemented eventually.
 
-mod player;
-mod set2;
+pub mod player;
+pub mod set2;
 
-pub(crate) type Currency = u64;
+pub type Currency = u64;

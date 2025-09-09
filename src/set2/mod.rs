@@ -3,18 +3,19 @@ mod test;
 use std::collections::HashMap;
 
 use thiserror::Error;
+use uuid::Uuid;
 
 use crate::{player::Player, Currency};
 
 /// Betting set with two outcomes. A player can bet on both sides at once.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Set2 {
-    /// * `0` - Player name.
-    /// * `1` - Bet amount.
-    side_1: HashMap<String, Currency>,
-    /// * `0` - Player name.
-    /// * `1` - Bet amount.
-    side_2: HashMap<String, Currency>,
+    /// * `0`: Player UUID.
+    /// * `1`: Bet amount.
+    side_1_bets: HashMap<Uuid, Currency>,
+    /// * `0`: Player UUID.
+    /// * `1`: Bet amount.
+    side_2_bets: HashMap<Uuid, Currency>,
 }
 
 impl Set2 {
@@ -31,8 +32,8 @@ impl Set2 {
     ) -> Result<(), BetError> {
         // Pick side dependent on side argument. If this runs into a borrow checker issue for holding a mutable reference for longer than temporary lifetime, it may be possible to extract into a local function to be evaluated each time a mutable reference to side is needed.
         let side = match side {
-            Set2Side::Side1 => &mut self.side_1,
-            Set2Side::Side2 => &mut self.side_2,
+            Set2Side::Side1 => &mut self.side_1_bets,
+            Set2Side::Side2 => &mut self.side_2_bets,
         };
 
         // Return if insufficient balance.
@@ -41,7 +42,7 @@ impl Set2 {
         }
 
         // Return if player already exists.
-        if side.contains_key(player.name()) {
+        if side.contains_key(player.uuid()) {
             return Err(BetError::PlayerExists);
         }
 
@@ -49,15 +50,15 @@ impl Set2 {
         *player.balance_mut() = player.balance().saturating_sub(amount);
 
         // Add bet.
-        side.insert(player.name().clone(), amount);
+        side.insert(*player.uuid(), amount);
         Ok(())
     }
 
     /// Raise an already-existing bet on `side` as `player` for `amount`. Reduces the player's balance by amount if they have enough.
     ///
     /// # Errors
-    /// * [`InsufficientBalance`](BetError::InsufficientBalance) - Insufficient balance to bet.
-    /// * [`PlayerNotExists`](BetError::PlayerNotExists) - Player cannot raise their bet, as they've yet to bet at all.
+    /// - [`InsufficientBalance`](BetError::InsufficientBalance) - Insufficient balance to bet.
+    /// - [`PlayerNotExists`](BetError::PlayerNotExists) - Player cannot raise their bet, as they've yet to bet at all.
     pub fn raise(
         &mut self,
         player: &mut (impl Player + ?Sized),
@@ -66,8 +67,8 @@ impl Set2 {
     ) -> Result<(), BetError> {
         // Pick side dependent on side argument. If this runs into a borrow checker issue for holding a mutable reference for longer than temporary lifetime, it may be possible to extract into a local function to be evaluated each time a mutable reference to side is needed.
         let side = match side {
-            Set2Side::Side1 => &mut self.side_1,
-            Set2Side::Side2 => &mut self.side_2,
+            Set2Side::Side1 => &mut self.side_1_bets,
+            Set2Side::Side2 => &mut self.side_2_bets,
         };
 
         // Return if insufficient balance.
@@ -76,7 +77,7 @@ impl Set2 {
         }
 
         // Return if player does not exist yet.
-        if !side.contains_key(player.name()) {
+        if !side.contains_key(player.uuid()) {
             return Err(BetError::PlayerNotExists);
         }
 
@@ -84,15 +85,15 @@ impl Set2 {
         *player.balance_mut() = player.balance().saturating_sub(amount);
 
         // Add amount to bet.
-        *side.get_mut(player.name()).unwrap() =
-            side.get(player.name()).unwrap().saturating_add(amount);
+        *side.get_mut(player.uuid()).unwrap() =
+            side.get(player.uuid()).unwrap().saturating_add(amount);
         Ok(())
     }
 
     /// If no bet exists yet for `side` for `player`, make a new bet with `amount`. If a bet already exists for `side` for `player`, raise that bet by `amount`.
     ///
     /// # Errors
-    /// * [`InsufficientBalance`](BetError::InsufficientBalance) - Insufficient balance to bet.
+    /// - [`InsufficientBalance`](BetError::InsufficientBalance) - Insufficient balance to bet.
     pub fn bet_or_raise(
         &mut self,
         player: &mut (impl Player + ?Sized),
@@ -107,31 +108,31 @@ impl Set2 {
     }
 
     /// Does `side` contain `player_name`?
-    pub fn side_has_player(&self, player_name: &String, side: Set2Side) -> bool {
+    pub fn side_has_player(&self, player_uuid: &Uuid, side: Set2Side) -> bool {
         let side = match side {
-            Set2Side::Side1 => &self.side_1,
-            Set2Side::Side2 => &self.side_2,
+            Set2Side::Side1 => &self.side_1_bets,
+            Set2Side::Side2 => &self.side_2_bets,
         };
 
-        side.contains_key(player_name)
+        side.contains_key(player_uuid)
     }
 
     /// Does the set contain `player_name` on either side?
-    pub fn contains_player(&self, player_name: &String) -> bool {
-        self.side_1.contains_key(player_name) || self.side_2.contains_key(player_name)
+    pub fn contains_player(&self, player_uuid: &Uuid) -> bool {
+        self.side_1_bets.contains_key(player_uuid) || self.side_2_bets.contains_key(player_uuid)
     }
 
     /// Calculate payout.
     ///
     /// # Returns
-    /// * `K` - Immutable reference to player name.
-    /// * `V` - Amount.
-    pub fn payout<'a>(&'a self, winner: Set2Side) -> HashMap<&'a String, Currency> {
+    /// - `K`: Player UUID.
+    /// - `V`: Amount.
+    pub fn payout<'a>(&'a self, winner: Set2Side) -> HashMap<&'a Uuid, Currency> {
         let mut payout = HashMap::new();
 
         let (winning_side, losing_side) = match winner {
-            Set2Side::Side1 => (&self.side_1, &self.side_2),
-            Set2Side::Side2 => (&self.side_2, &self.side_1),
+            Set2Side::Side1 => (&self.side_1_bets, &self.side_2_bets),
+            Set2Side::Side2 => (&self.side_2_bets, &self.side_1_bets),
         };
 
         let winning_side_total = winning_side.iter().fold(0, |a, x| a + x.1);
@@ -174,8 +175,8 @@ impl Set2 {
 impl Default for Set2 {
     fn default() -> Self {
         Self {
-            side_1: HashMap::new(),
-            side_2: HashMap::new(),
+            side_1_bets: HashMap::new(),
+            side_2_bets: HashMap::new(),
         }
     }
 }
