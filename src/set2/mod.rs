@@ -1,5 +1,4 @@
-// TODO: rewrite tests
-// mod test;
+mod test;
 
 use std::collections::HashMap;
 
@@ -42,6 +41,17 @@ pub struct Set2 {
 }
 
 impl Set2 {
+    pub fn new(creator_uuid: PlayerUuid, bet_basis: String) -> Self {
+        Self {
+            uuid: SetUuid(Uuid::new_v4()),
+            creator_uuid,
+            bet_basis,
+            comments: Default::default(),
+            side_1_bets: Default::default(),
+            side_2_bets: Default::default(),
+        }
+    }
+
     /// Bet as `player` on `side` with `amount`. Reduces the player's balance by amount if they have enough.
     ///
     /// # Errors

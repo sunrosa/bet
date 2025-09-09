@@ -19,6 +19,8 @@ pub trait Player {
     /// Mutable reference to the player's account balance.
     fn balance_mut(&mut self) -> &mut Currency;
 
+    // TODO: use these functions below in Set2
+
     /// [`bet`](Set2::bet) as player.
     fn bet(&mut self, set2: &mut Set2, side: Set2Side, amount: Currency) -> Result<(), BetError> {
         set2.bet(self, side, amount)
